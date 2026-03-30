@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paper Writer Agent UI</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    <h1>Paper Writer Agent</h1>
+    <p class="muted">一个简易前端：可生成论文草稿、查看最近运行记录、详情与统计指标。</p>
+
+    <div id="statusBanner" class="status status-info">Ready.</div>
+
+    <div class="card">
+      <h2>Generate</h2>
+      <label for="apiKey">API Key (optional)</label>
+      <input id="apiKey" placeholder="If server requires API key, paste it here" />
+      <label for="task">Task</label>
+      <textarea id="task">Write a short paper about memory-augmented agents.</textarea>
+      <label for="outline">Outline</label>
+      <textarea id="outline">1. Background
+2. Architecture
+3. Evaluation
+4. Limitations</textarea>
+      <label for="revisionNotes">Revision Notes</label>
+      <textarea id="revisionNotes" placeholder="Optional: e.g. strengthen evidence, shorten abstract, improve conclusion flow"></textarea>
+      <label for="iterations">Iterations</label>
+      <input id="iterations" type="number" min="1" max="10" value="2" />
+      <button id="generateBtn">Generate Paper</button>
+      <div class="action-row">
+        <a id="downloadLatestDraftBtn" class="button-link btn-secondary" href="#" aria-disabled="true">Download Latest Draft (.md)</a>
+      </div>
+      <div class="preview-grid">
+        <div>
+          <h3>Generation Meta</h3>
+          <pre id="generateResult">No generation yet.</pre>
+        </div>
+        <div>
+          <h3>Paper Preview</h3>
+          <article id="paperPreview" class="paper-preview empty">No paper generated yet.</article>
+        </div>
+      </div>
+      <div>
+        <h3>Review Summary</h3>
+        <div id="reviewPreview" class="review-preview empty">No review yet.</div>
+      </div>
+      <div>
+        <h3>Evidence Links</h3>
+        <div id="evidencePreview" class="evidence-preview empty">No evidence linked yet.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Metrics</h2>
+      <button id="metricsBtn">Refresh Metrics</button>
+      <div class="metrics-grid">
+        <div class="metric-tile">
+          <div class="metric-label">Total Runs</div>
+          <div id="metricTotalRuns" class="metric-value">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Avg Quality</div>
+          <div id="metricAvgQuality" class="metric-value">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Avg Duration (ms)</div>
+          <div id="metricAvgDuration" class="metric-value">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Success Rate</div>
+          <div id="metricSuccessRate" class="metric-value">-</div>
+        </div>
+      </div>
+      <div class="metric-reasons">
+        <div class="metric-label">Stop Reason Counts</div>
+        <pre id="metricReasonCounts">{}</pre>
+      </div>
+      <pre id="metricsResult">No metrics loaded.</pre>
+    </div>
+
+    <div class="card">
+      <h2>Strategy Canary Dashboard (Day28)</h2>
+      <div class="action-row">
+        <label for="strategyDays">Window (days)</label>
+        <input id="strategyDays" type="number" min="1" max="90" value="7" />
+        <button id="refreshStrategyDashboardBtn" class="btn-secondary" type="button">Refresh Dashboard</button>
+        <button id="autoReplayBtn" class="btn-secondary" type="button">Auto Replay</button>
+      </div>
+      <div class="action-row">
+        <button id="enableCanaryBtn" type="button">Enable Canary</button>
+        <button id="disableCanaryBtn" class="btn-secondary" type="button">Disable Canary</button>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-tile">
+          <div class="metric-label">Strategy Experiments</div>
+          <div id="strategyExperimentTotal" class="metric-value">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Guardrail Pass Rate</div>
+          <div id="strategyGuardrailPassRate" class="metric-value">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Canary Recommended</div>
+          <div id="strategyCanaryRecommended" class="metric-value">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Canary Ratio</div>
+          <div id="strategyCanaryRatio" class="metric-value">-</div>
+        </div>
+      </div>
+      <pre id="strategyDashboardResult">No strategy dashboard loaded.</pre>
+      <pre id="strategyReplayResult">No replay executed.</pre>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Recent Runs</h2>
+        <div class="control-row">
+          <div>
+            <label for="qFilter">Keyword (q)</label>
+            <input id="qFilter" placeholder="e.g. agent" />
+          </div>
+          <div>
+            <label for="stopReasonFilter">Stop Reason</label>
+            <input id="stopReasonFilter" placeholder="e.g. max_iterations_reached" />
+          </div>
+          <div>
+            <label for="parentRunFilter">Parent Run ID</label>
+            <input id="parentRunFilter" placeholder="e.g. select a parent run id" />
+          </div>
+          <div>
+            <label for="rootRunFilter">Root Run ID</label>
+            <input id="rootRunFilter" placeholder="e.g. select a lineage root run id" />
+          </div>
+          <div>
+            <label for="lineageScopeFilter">Lineage Scope</label>
+            <select id="lineageScopeFilter">
+              <option value="" selected>all</option>
+              <option value="root">root</option>
+              <option value="derived">derived</option>
+            </select>
+          </div>
+          <div>
+            <label for="createdAfterFilter">Created After</label>
+            <input id="createdAfterFilter" type="datetime-local" />
+          </div>
+          <div>
+            <label for="createdBeforeFilter">Created Before</label>
+            <input id="createdBeforeFilter" type="datetime-local" />
+          </div>
+          <div>
+            <label for="minQualityFilter">Min Quality</label>
+            <input id="minQualityFilter" type="number" min="0" max="10" placeholder="0" />
+          </div>
+          <div>
+            <label for="maxQualityFilter">Max Quality</label>
+            <input id="maxQualityFilter" type="number" min="0" max="10" placeholder="10" />
+          </div>
+          <div>
+            <label for="sortByFilter">Sort By</label>
+            <select id="sortByFilter">
+              <option value="created_at" selected>created_at</option>
+              <option value="quality_score">quality_score</option>
+              <option value="duration_ms">duration_ms</option>
+            </select>
+          </div>
+          <div>
+            <label for="sortOrderFilter">Sort Order</label>
+            <select id="sortOrderFilter">
+              <option value="desc" selected>desc</option>
+              <option value="asc">asc</option>
+            </select>
+          </div>
+          <div>
+            <label for="minDurationFilter">Min Duration</label>
+            <input id="minDurationFilter" type="number" min="0" placeholder="0" />
+          </div>
+          <div>
+            <label for="maxDurationFilter">Max Duration</label>
+            <input id="maxDurationFilter" type="number" min="0" placeholder="5000" />
+          </div>
+          <div>
+            <label for="pageSizeFilter">Page Size</label>
+            <select id="pageSizeFilter">
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <button id="refreshBtn">Apply Filters</button>
+          <button id="clearFiltersBtn" class="btn-secondary">Clear Filters</button>
+          <a id="exportBtn" class="button-link btn-secondary" href="#">Export CSV</a>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Run ID</th><th>Parent Run</th><th>Root Run</th><th>Quality</th><th>Stop Reason</th><th>Created At</th><th>Duration(ms)</th><th>Action</th></tr>
+          </thead>
+          <tbody id="runsBody"></tbody>
+        </table>
+        <div class="pagination">
+          <div id="pageSummary" class="muted">Page 1</div>
+          <div class="pagination-controls">
+            <button id="prevPageBtn" class="btn-secondary btn-small">Previous Page</button>
+            <button id="nextPageBtn" class="btn-secondary btn-small">Next Page</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Run Detail</h2>
+        <p class="muted">点击左侧表格中的 View 按钮查看详情。</p>
+        <div id="runDetailSummary" class="detail-summary empty">No run selected.</div>
+        <div class="action-row">
+          <button id="reuseRunBtn" class="btn-secondary" type="button">Load Run into Editor</button>
+          <a id="downloadRunDraftBtn" class="button-link btn-secondary" href="#" aria-disabled="true">Download Markdown</a>
+        </div>
+        <h3>Run Lineage</h3>
+        <p class="muted">查看当前 run 的祖先版本链和所有后续修订版本。</p>
+        <div id="runLineage" class="lineage-panel empty">No lineage loaded.</div>
+        <h3>Draft</h3>
+        <article id="runDraftPreview" class="paper-preview empty">No draft loaded.</article>
+        <h3>Review</h3>
+        <div id="runReviewPreview" class="review-preview empty">No review loaded.</div>
+        <h3>Evidence Links</h3>
+        <div id="runEvidencePreview" class="evidence-preview empty">No evidence loaded.</div>
+        <h3>Revision Plan</h3>
+        <p class="muted">勾选后可直接应用到当前 run，生成新的修订版本。</p>
+        <div id="revisionPlanPanel" class="revision-plan-panel empty">No revision plan loaded.</div>
+        <div class="action-row">
+          <button id="applyPlanBtn" class="btn-secondary" type="button">Apply Selected Plan Items</button>
+        </div>
+        <h3>Draft Diff (vs Parent)</h3>
+        <p class="muted">若当前 run 存在父版本，可查看 unified diff 预览。</p>
+        <div id="runDiffPanel" class="diff-panel empty">No diff loaded.</div>
+        <div class="action-row">
+          <button id="loadDiffBtn" class="btn-secondary" type="button">Load Diff Against Parent</button>
+        </div>
+        <details class="raw-json">
+          <summary>Raw JSON</summary>
+          <pre id="runDetail">No run selected.</pre>
+        </details>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Editing Workspace</h2>
+      <p class="muted">把最新草稿或所选 run 的草稿载入这里，继续手工润色，再导出为最终 Markdown。</p>
+      <div class="action-row">
+        <button id="loadPreviewIntoWorkspaceBtn" class="btn-secondary" type="button">Load Latest Draft into Workspace</button>
+        <button id="loadRunIntoWorkspaceBtn" class="btn-secondary" type="button">Load Selected Run Draft</button>
+        <button id="previewWorkspaceBtn" class="btn-secondary" type="button">Preview Workspace Draft</button>
+        <button id="downloadWorkspaceBtn" class="btn-secondary" type="button">Download Edited Draft (.md)</button>
+        <button id="saveWorkspaceBtn" class="btn-secondary" type="button">Save Edited Draft as New Run</button>
+      </div>
+      <div class="workspace-tools">
+        <label for="workspaceFileInput">Import Markdown File</label>
+        <input id="workspaceFileInput" type="file" accept=".md,text/markdown,text/plain" />
+        <button id="clearWorkspaceBtn" class="btn-secondary" type="button">Clear Workspace</button>
+      </div>
+      <textarea id="draftWorkspace" class="workspace-textarea" placeholder="Your editable paper draft will appear here..."></textarea>
+      <h3>Workspace Preview</h3>
+      <article id="workspacePreview" class="paper-preview empty">No workspace preview yet.</article>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
